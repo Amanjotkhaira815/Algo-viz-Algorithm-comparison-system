@@ -1,0 +1,302 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <queue>
+#include <chrono>
+#include <windows.h>
+#include <climits>
+
+using namespace std;
+using namespace chrono;
+
+// ================= UI =================
+void line() {
+    cout << "\n========================================\n";
+}
+
+void printArray(vector<int>& arr) {
+    for (int x : arr) cout << x << " ";
+    cout << endl;
+}
+
+// ================= SORTING =================
+void merge(vector<int>& arr, int l, int m, int r) {
+    vector<int> temp;
+    int i = l, j = m + 1;
+
+    while (i <= m && j <= r)
+        temp.push_back(arr[i] < arr[j] ? arr[i++] : arr[j++]);
+
+    while (i <= m) temp.push_back(arr[i++]);
+    while (j <= r) temp.push_back(arr[j++]);
+
+    for (int k = 0; k < temp.size(); k++)
+        arr[l + k] = temp[k];
+
+    printArray(arr);
+    Sleep(300);
+}
+
+void mergeSort(vector<int>& arr, int l, int r) {
+    if (l >= r) return;
+    int m = (l + r) / 2;
+    mergeSort(arr, l, m);
+    mergeSort(arr, m + 1, r);
+    merge(arr, l, m, r);
+}
+
+int partition(vector<int>& arr, int low, int high) {
+    int pivot = arr[high], i = low - 1;
+
+    for (int j = low; j < high; j++) {
+        if (arr[j] < pivot) {
+            swap(arr[++i], arr[j]);
+            printArray(arr);
+            Sleep(300);
+        }
+    }
+
+    swap(arr[i + 1], arr[high]);
+    printArray(arr);
+    Sleep(300);
+
+    return i + 1;
+}
+
+void quickSort(vector<int>& arr, int low, int high) {
+    if (low < high) {
+        int pi = partition(arr, low, high);
+        quickSort(arr, low, pi - 1);
+        quickSort(arr, pi + 1, high);
+    }
+}
+
+// ================= KNAPSACK =================
+struct Item {
+    int value, weight;
+};
+
+bool cmp(Item a, Item b) {
+    return (double)a.value / a.weight > (double)b.value / b.weight;
+}
+
+double fractionalKnapsack(int W, vector<Item>& items) {
+    sort(items.begin(), items.end(), cmp);
+    double total = 0;
+
+    for (auto& item : items) {
+        if (W >= item.weight) {
+            total += item.value;
+            W -= item.weight;
+        } else {
+            total += item.value * ((double)W / item.weight);
+            break;
+        }
+    }
+    return total;
+}
+
+int knapsackDP(int W, vector<int>& wt, vector<int>& val, int n) {
+    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+
+    for (int i = 1; i <= n; i++) {
+        for (int w = 0; w <= W; w++) {
+            if (wt[i - 1] <= w)
+                dp[i][w] = max(dp[i - 1][w],
+                               val[i - 1] + dp[i - 1][w - wt[i - 1]]);
+            else
+                dp[i][w] = dp[i - 1][w];
+        }
+    }
+    return dp[n][W];
+}
+
+// ================= GRAPH =================
+void dijkstra(int V, vector<vector<pair<int,int>>>& adj, int src) {
+    vector<int> dist(V, INT_MAX);
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;
+
+    dist[src] = 0;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        int u = pq.top().second;
+        pq.pop();
+
+        for (auto& edge : adj[u]) {
+            int v = edge.first, w = edge.second;
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+
+    cout << "\nDijkstra Result (Shortest Paths):\n";
+    for (int i = 0; i < V; i++)
+        cout << "Node " << i << " -> " << dist[i] << endl;
+}
+
+void prim(int V, vector<vector<pair<int,int>>>& adj) {
+    vector<int> key(V, INT_MAX);
+    vector<bool> inMST(V, false);
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;
+
+    key[0] = 0;
+    pq.push({0, 0});
+    int cost = 0;
+
+    while (!pq.empty()) {
+        int u = pq.top().second;
+        pq.pop();
+
+        if (inMST[u]) continue;
+        inMST[u] = true;
+        cost += key[u];
+
+        for (auto& edge : adj[u]) {
+            int v = edge.first, w = edge.second;
+            if (!inMST[v] && w < key[v]) {
+                key[v] = w;
+                pq.push({key[v], v});
+            }
+        }
+    }
+
+    cout << "\nPrim Result (MST Cost): " << cost << endl;
+}
+
+// ================= MAIN =================
+int main() {
+    int choice;
+
+    line();
+    cout << " ALGORITHM COMPARISON VISUALIZER ";
+    line();
+
+    cout << "1. Sorting\n2. Knapsack\n3. Graph Algorithms\n";
+    cout << "Enter choice: ";
+    cin >> choice;
+
+    // -------- SORTING --------
+    if (choice == 1) {
+        int n;
+        cout << "Enter number of elements: ";
+        cin >> n;
+
+        vector<int> arr(n);
+        cout << "Enter elements: ";
+        for (int i = 0; i < n; i++) cin >> arr[i];
+
+        vector<int> a1 = arr, a2 = arr;
+
+        line();
+        cout << "Merge Sort Visualization:\n";
+        auto t1 = high_resolution_clock::now();
+        mergeSort(a1, 0, n - 1);
+        auto t2 = high_resolution_clock::now();
+
+        line();
+        cout << "Quick Sort Visualization:\n";
+        auto t3 = high_resolution_clock::now();
+        quickSort(a2, 0, n - 1);
+        auto t4 = high_resolution_clock::now();
+
+        auto time1 = duration_cast<microseconds>(t2 - t1).count();
+        auto time2 = duration_cast<microseconds>(t4 - t3).count();
+
+        line();
+        cout << "FINAL SORTED ARRAY:\n";
+        printArray(a1);
+
+        line();
+        cout << "Merge Sort: " << time1 << " us\n";
+        cout << "Quick Sort: " << time2 << " us\n";
+
+        if (time1 < time2)
+            cout << "Merge Sort is faster\n";
+        else
+            cout << "Quick Sort is faster\n";
+    }
+
+    // -------- KNAPSACK --------
+    else if (choice == 2) {
+        int n, W;
+        cout << "Enter number of items: ";
+        cin >> n;
+
+        vector<Item> items(n);
+        vector<int> wt(n), val(n);
+
+        cout << "Enter value and weight:\n";
+        for (int i = 0; i < n; i++) {
+            cin >> val[i] >> wt[i];
+            items[i] = {val[i], wt[i]};
+        }
+
+        cout << "Enter capacity: ";
+        cin >> W;
+
+        line();
+
+        double frac = fractionalKnapsack(W, items);
+        int zeroOne = knapsackDP(W, wt, val, n);
+
+        cout << "Fractional Knapsack: " << frac << endl;
+        cout << "0/1 Knapsack: " << zeroOne << endl;
+
+        cout << "\n--- COMPARISON RESULT ---\n";
+
+        if (frac > zeroOne)
+            cout << "Fractional Knapsack is better (Greedy)\n";
+        else if (zeroOne > frac)
+            cout << "0/1 Knapsack is better (DP)\n";
+        else
+            cout << "Both give same result\n";
+    }
+
+    // -------- GRAPH --------
+    else if (choice == 3) {
+        int V, E;
+        cout << "Enter vertices and edges: ";
+        cin >> V >> E;
+
+        vector<vector<pair<int,int>>> adj(V);
+
+        cout << "Enter edges (u v w):\n";
+        for (int i = 0; i < E; i++) {
+            int u, v, w;
+            cin >> u >> v >> w;
+            adj[u].push_back({v, w});
+            adj[v].push_back({u, w});
+        }
+
+        int src;
+        cout << "Enter source for Dijkstra: ";
+        cin >> src;
+
+        line();
+        cout << "Running Dijkstra...\n";
+        auto t1 = high_resolution_clock::now();
+        dijkstra(V, adj, src);
+        auto t2 = high_resolution_clock::now();
+
+        line();
+        cout << "Running Prim...\n";
+        auto t3 = high_resolution_clock::now();
+        prim(V, adj);
+        auto t4 = high_resolution_clock::now();
+
+        auto time1 = duration_cast<microseconds>(t2 - t1).count();
+        auto time2 = duration_cast<microseconds>(t4 - t3).count();
+
+        line();
+        cout << "TIME COMPARISON:\n";
+        cout << "Dijkstra: " << time1 << " us\n";
+        cout << "Prim: " << time2 << " us\n";
+
+        cout << "\nNote: Dijkstra finds shortest paths, Prim finds MST.\n";
+    }
+
+    return 0;
+}
